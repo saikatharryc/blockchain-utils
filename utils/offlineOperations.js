@@ -13,8 +13,8 @@ const CHAIN_TYPE = {
     CHANGE: { BTC: 0, ETH: 1 }
 
 };
-let k = bitcoin.ECPair.makeRandom({ compressed: false, network: bitcoin.networks.testnet });
-console.log(k.getAddress(), k.toWIF());
+//let k = bitcoin.ECPair.makeRandom({ compressed: false, network: bitcoin.networks.testnet });
+//console.log(k.getAddress(), k.toWIF());
 var MAX_GENERATOR_LIMIT = 100;
 var SUPPORTED_COINS = ['BTC', 'ETH'];
 
@@ -28,14 +28,6 @@ var addressDerivation = {
         return bitcoin.HDNode.fromBase58(xpub).derive(index).keyPair.getAddress();
     },
 };
-let mnemonic = bip39.generateMnemonic();
-console.log((mnemonic));
-console.log(bip39.mnemonicToEntropy(mnemonic));
-console.log(bip39.mnemonicToSeed(mnemonic));
-let hd = bitcoin.HDNode.fromSeedBuffer(bip39.mnemonicToSeed(mnemonic));
-console.log('hd==>', hd.derivePath("m/44'/0'").toBase58());
-console.log('hd.derivePath', hd.derivePath("m/44'/0'/0'/0").toBase58());
-let neuteredXpub = hd.derivePath("m/44'/60'/0'/0").neutered().toBase58(); */
 async function generateAccount(coinType) {
     let purpose = 44, coin = '', accountIndex = 0, chainType = 0; //External = 0 (receiving addresses); Internal =1 (change addresses); 
     let path = "m/";

@@ -70,7 +70,6 @@ rpchelper.prototype.getLatestBlockHeight = function (callback) {
 };
 
 
-module.exports = rpchelper;
+//module.exports = rpchelper;
 
-let k = new rpchelper()
 // k.getProgress(() => { })
