@@ -14,11 +14,16 @@ const CHAIN_TYPE = {
     RECEIVE: { BTC: 0, ETH: 0 },
     CHANGE: { BTC: 0, ETH: 1 }
 };
+<<<<<<< HEAD
 const CURRENT_NETWORK = bitcoin.networks[config.network.BTC[config.current]];
 const CURRENT_NETWORK_VERSION = coininfo.bitcoin[config.current].versions.bip32;
 
 let k = bitcoin.ECPair.makeRandom({ compressed: false, network: bitcoin.networks.testnet });
 console.log(k.getAddress(), k.toWIF());
+=======
+//let k = bitcoin.ECPair.makeRandom({ compressed: false, network: bitcoin.networks.testnet });
+//console.log(k.getAddress(), k.toWIF());
+>>>>>>> 02e486587ea7a917c6a381283ae8211d8c8e7dd8
 var MAX_GENERATOR_LIMIT = 100;
 var SUPPORTED_COINS = ['BTC', 'ETH'];
 

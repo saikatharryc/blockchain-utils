@@ -112,6 +112,7 @@ async function getTxDetails(txHash) {
     btcHandler.requestGet = sysUtils.promisify(btcHandler.requestGet);
     try {
         var details = await btcHandler.requestGet('/api/tx/' + txHash);
+	if (details.statusCode != 200) throw new Error(details.body);
     } catch (e) {
         console.error('[getTxDetails]', e);
         return ({ status: false, error: e.message || e });
@@ -120,7 +121,7 @@ async function getTxDetails(txHash) {
     if (details == null || details.body == null || details.body == 'Not found')
         return ({ status: false, error: 'Not found' });
     console.log('[btcHelper-getTxDetails]', details.body);
-    return ({ status: true, message: JSON.parse(details.body) });
+    return ({ status: true, message: (details.body) });
 }
 
 async function balance(address) {
