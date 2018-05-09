@@ -133,9 +133,9 @@ async function balanceAtAddress(address, coinType) {
 }
 async function generateKeyPairFromXpriv(xpriv, coinType, total = 10) {
     if (!SUPPORTED_COINS.includes(coinType.toUpperCase())) { throw new Error('Coin not supported'); }
-    if (bitcoin.HDNode.fromBase58(xpriv).isNeutered()) { throw new Error('Please provide Master Private key in xpriv format') }
-    if (hdkey.fromExtendedKey(xpriv).depth !== 3) { throw new Error('Please provide Master Private key at Account depth or at 3') };
-    let hdNode = bitcoin.HDNode.fromBase58(xpriv);
+    if (bitcoin.HDNode.fromBase58(xpriv,CURRENT_NETWORK).isNeutered()) { throw new Error('Please provide Master Private key in xpriv format') }
+    if (hdkey.fromExtendedKey(xpriv, CURRENT_NETWORK_VERSION).depth !== 3) { throw new Error('Please provide Master Private key at Account depth or at 3') };
+    let hdNode = bitcoin.HDNode.fromBase58(xpriv, CURRENT_NETWORK);
     let chainType = CHAIN_TYPE.RECEIVE[coinType.toUpperCase()];
     let result = generatePubPrivFromHDNode(hdNode, chainType, total, coinType);
     console.log('[offlineTool-generatePubPrivFromHDNode]', result);
