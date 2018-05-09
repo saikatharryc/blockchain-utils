@@ -175,7 +175,7 @@ function generatePubPrivFromHDNode(HDNode, chainType, total = 10, coinType) {
 async function generateAddresses(extendedKey, coinType, total = 10) {
     let addressArray = [];
     if (!SUPPORTED_COINS.includes(coinType.toUpperCase())) { return ({ status: false, error: error.message || error }); }
-    if (bitcoin.HDNode.fromBase58(extendedKey).isNeutered()) {
+    if (bitcoin.HDNode.fromBase58(extendedKey, CURRENT_NETWORK).isNeutered()) {
         try {
             addressArray = await generateAddressesFromXpub(extendedKey, coinType.toUpperCase(), total);
         } catch (error) {
