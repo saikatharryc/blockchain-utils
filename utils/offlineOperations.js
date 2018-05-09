@@ -7,12 +7,16 @@ var bitcoin = require('bitcoinjs-lib');
 var ethereumUtils = require('ethereumjs-util');
 var Insight = require('bitcore-explorers').Insight;
 var bitcore = require('bitcore-lib');
+var config = require('../config');
+var coininfo = require('coininfo');
 var btcHandler = new Insight(/* 'https://insight.bitpay.com', bitcoin.networks.bitcoin */);
 const CHAIN_TYPE = {
     RECEIVE: { BTC: 0, ETH: 0 },
     CHANGE: { BTC: 0, ETH: 1 }
-
 };
+const CURRENT_NETWORK = bitcoin.networks[config.network.BTC[config.current]];
+const CURRENT_NETWORK_VERSION = coininfo.bitcoin[config.current].versions.bip32;
+
 let k = bitcoin.ECPair.makeRandom({ compressed: false, network: bitcoin.networks.testnet });
 console.log(k.getAddress(), k.toWIF());
 var MAX_GENERATOR_LIMIT = 100;
@@ -25,17 +29,9 @@ var addressDerivation = {
         return ethereumUtils.toChecksumAddress(nonCheckSumAddress);
     },
     BTC: function (xpub, index) {
-        return bitcoin.HDNode.fromBase58(xpub).derive(index).keyPair.getAddress();
+        return bitcoin.HDNode.fromBase58(xpub,CURRENT_NETWORK).derive(index).keyPair.getAddress();
     },
 };
-let mnemonic = bip39.generateMnemonic();
-console.log((mnemonic));
-console.log(bip39.mnemonicToEntropy(mnemonic));
-console.log(bip39.mnemonicToSeed(mnemonic));
-let hd = bitcoin.HDNode.fromSeedBuffer(bip39.mnemonicToSeed(mnemonic));
-console.log('hd==>', hd.derivePath("m/44'/0'").toBase58());
-console.log('hd.derivePath', hd.derivePath("m/44'/0'/0'/0").toBase58());
-let neuteredXpub = hd.derivePath("m/44'/60'/0'/0").neutered().toBase58(); */
 async function generateAccount(coinType) {
     let purpose = 44, coin = '', accountIndex = 0, chainType = 0; //External = 0 (receiving addresses); Internal =1 (change addresses); 
     let path = "m/";
@@ -55,10 +51,10 @@ async function generateAccount(coinType) {
             path += coin + "'/";
             path += accountIndex + "'";
             let mnemonicString = mnemonicGenerate();
-            let hdNode = bitcoin.HDNode.fromSeedBuffer(bip39.mnemonicToSeed(mnemonicString));
+            let hdNode = bitcoin.HDNode.fromSeedBuffer(bip39.mnemonicToSeed(mnemonicString),CURRENT_NETWORK);
             let xprivImport = hdNode.derivePath(path).toBase58();
             let xpubImport = hdNode.derivePath(path).neutered().toBase58();
-            let neuteredXpub = hdkey.fromExtendedKey(xpubImport).deriveChild(chainType).toJSON().xpub;
+            let neuteredXpub = hdkey.fromExtendedKey(xpubImport, CURRENT_NETWORK_VERSION).deriveChild(chainType).toJSON().xpub;
             let receivingAddresses = await generateAddressesFromXpub(neuteredXpub, coinType.toUpperCase(), 5);
             account.mnemonicPhrase = mnemonicString;
             account.accountXpriv = xprivImport.toString();
@@ -103,8 +99,8 @@ function mnemonicGenerate() {
 async function generateAddressesFromXpub(neuteredXpub, coinType, total = 2) {
     console.log(neuteredXpub, coinType, total)
     if (neuteredXpub == null || parseInt(total) < 0 || parseInt(total) > MAX_GENERATOR_LIMIT || coinType == null || !SUPPORTED_COINS.includes(coinType.toUpperCase())) throw new Error('XPUB length ');
-    if (!bitcoin.HDNode.fromBase58(neuteredXpub).isNeutered()) { throw new Error('Please provide neutered Xpub ') }
-    if (hdkey.fromExtendedKey(neuteredXpub).depth !== 4) { throw new Error('Please provide neutered Xpub at depth 4') };
+    if (!bitcoin.HDNode.fromBase58(neuteredXpub, CURRENT_NETWORK).isNeutered()) { throw new Error('Please provide neutered Xpub ') }
+    if (hdkey.fromExtendedKey(neuteredXpub, CURRENT_NETWORK_VERSION).depth !== 4) { throw new Error('Please provide neutered Xpub at depth 4') };
     let genrtdAddress = [];
     for (let i = 0; i < total; i++) {
         genrtdAddress.push({
