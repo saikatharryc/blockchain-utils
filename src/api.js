@@ -25,8 +25,8 @@ async function balance(req, res) {
       break;
     }
     default: {
-      response.status = false;
-      response.error = 'coin not supported'
+      balanceRes.status = false;
+      balanceRes.error = 'coin not supported'
       break;
     }
   }
@@ -63,17 +63,13 @@ async function txStatus(req, res) {
 }
 /**
  * 
- * @param {coin} req 
+ * @param {} 
  *
  */
-async function generateAccount(req, res) {
-  if (req.query.coin == undefined) {
-    res.status(400).send({ status: false, error: 'Coin not given' });
-    return;
-  }
+async function getMnemonic(req, res) {
   var response = {};
   try {
-    response = await offlineTool.generateAccount(req.query.coin);
+    response = await offlineTool.getMnemonic();
   } catch (error) {
     return res.status(400).json({ status: false, error: error.message || error });
   }
@@ -107,7 +103,7 @@ async function generateAddress(req, res) {
  * @param {toAddress} string
  * @param {sendAmount} string 
  * @param {coin} string 
- * e980850165a0bc008094696d43b2f4394cd81c7562f674735deb95c38f9587038d7ea4c68000801c8080
+ * 
  */
 async function createTxn(req, res) {
   if (req.body.addresses == undefined || req.body.toAddress == undefined || req.body.coin == undefined || req.body.sendAmount == undefined || req.body.addresses.length < 1) {
@@ -221,11 +217,31 @@ async function broadcastTxn(req, res) {
   return (response.status) ? res.status(200).json(response) : res.status(400).json(response);
 }
 
-
+/**
+ * 
+ * @param {coin} string 
+ * @param {mnemonic} string 
+ * 
+ */
+async function importMnemonic(req, res) {
+  if (req.body.mnemonic == undefined || req.body.coin == undefined) {
+    res.status(400).send({ status: false, error: 'no address provided' });
+    return;
+  }
+  let response = {};
+  try {
+    response = await offlineTool.importMnemonic(req.body.mnemonic, req.body.coin.toUpperCase());
+  } catch (error) {
+    res.status(400).send({ status: false, error: error.message || error });
+    return;
+  }
+  return (response.status) ? res.status(200).send(response) : res.status(400).send(response);
+}
 module.exports = {
   balance: balance,
   tx: txStatus,
-  generateAccount: generateAccount,
+  getMnemonic: getMnemonic,
+  importAccount: importMnemonic,
   generateAddress: generateAddress,
   createTxn: createTxn,
   signTxn: signTxn,

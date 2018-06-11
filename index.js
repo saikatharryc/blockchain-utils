@@ -6,7 +6,8 @@ var express = require('express'),
   router = express.Router();
 app.use(express.json());
 // NEW ACCOUNT
-app.get('/getnewaccount', api.generateAccount);
+app.get('/getmnemonic', api.getMnemonic);
+app.post('/importaccount', api.importAccount);
 
 //BALANCE
 app.get('/balance', api.balance);
@@ -24,3 +25,4 @@ app.get('/tx', api.tx);
 
 app.listen(port);
 logger.info('[Server] txns server started on: ' + port);
+
