@@ -1,5 +1,5 @@
 const RippleAPI = require('ripple-lib').RippleAPI;
-
+var self;
 class xrpHelper {
 
     constructor() {
@@ -8,12 +8,13 @@ class xrpHelper {
             server: 'wss://s.altnet.rippletest.net:51233', // Public rippled server hosted by Ripple, Inc.,
             maxFeeXRP: '0.5'
         });
+        self = this;
     }
 
     async connect() {
         try {
-            await this.api.connect();
-            return this.api.isConnected();
+            await self.api.connect();
+            return self.api.isConnected();
         } catch (error) {
             return Promise.reject({ status: false, reason: error.message || error });
         }
@@ -31,7 +32,7 @@ class xrpHelper {
             return;
         } else throw Error('Not connected to node');
     }
-    async getBalance(address, currency) {
+    async getBalance(address, currency = 'XRP') {
         try {
             this.isConnected();
             let balance = await this.api.getBalances(address, { currency: currency.toUpperCase() });
@@ -107,6 +108,13 @@ class xrpHelper {
         }
     }
 };
+/* (async () => {
+    try {
+        await exporterInstance.connect();
+    } catch (error) {
+        console.error('Error in connecting the XRP full Node.');
+    }
+})(); */
 module.exports = xrpHelper/* {
     connect: exporterInstance.connect,
     getNewAccount: exporterInstance.generateAddress,

@@ -30,6 +30,7 @@ async function balance(req, res) {
     case 'XRP': {
       try {
         balanceRes = await xrpHelper.getBalance(req.query.address);
+        balanceRes.status = true;
       } catch (error) {
         balanceRes.status = false;
         balanceRes.error = error.reason;
