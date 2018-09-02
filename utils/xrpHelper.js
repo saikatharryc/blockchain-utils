@@ -108,7 +108,19 @@ class xrpHelper {
     }
 };
 
-(async () => {
+module.exports = {
+    /* nonce: nonce,
+    createTx: createTransaction,
+    signTx: signTransaction,
+    broadcastTx: broadcastTransaction,
+    txDetails: getTxDetails,
+    balance: balance */
+};
+/* resultCode:"tecNO_DST_INSUF_XRP"
+resultMessage:"Destination does not exist. Too little XRP sent to create it." */
+
+
+/* (async () => {
     let classObj = new xrpHelper();
     console.log(await classObj.connect());
     console.log(await classObj.getBalance('rEumNCFuxDinZJzD5jEgx7JvpPb6ipsqpB', 'XRP'))
@@ -122,14 +134,4 @@ class xrpHelper {
     console.log(r);
     console.log(await classObj.broadcast(r.signedTransaction))
     console.log(await classObj.getBalance('rEumNCFuxDinZJzD5jEgx7JvpPb6ipsqpB', 'XRP'))
-})();
-module.exports = {
-    /* nonce: nonce,
-    createTx: createTransaction,
-    signTx: signTransaction,
-    broadcastTx: broadcastTransaction,
-    txDetails: getTxDetails,
-    balance: balance */
-};
-/* resultCode:"tecNO_DST_INSUF_XRP"
-resultMessage:"Destination does not exist. Too little XRP sent to create it." */
+})(); */
