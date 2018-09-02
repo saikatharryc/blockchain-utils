@@ -67,6 +67,17 @@ async function txStatus(req, res) {
       response = await ethHelper.txDetails(req.query.txhash);
       break;
     }
+    case 'XRP': {
+      try {
+        response = await xrpHelper.getTransaction(req.query.txhash);
+        response.status = true;
+      } catch (error) {
+        response.status = false;
+        response.error = error.reason;
+        break;
+      }
+      break;
+    }
     default: {
       response.status = false;
       response.error = 'coin not supported'
