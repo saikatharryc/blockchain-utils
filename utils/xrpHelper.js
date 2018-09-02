@@ -116,9 +116,6 @@ module.exports = {
     txDetails: exporterInstance.getTransaction,
     balance: exporterInstance.getBalance
 };
-/* resultCode:"tecNO_DST_INSUF_XRP"
-resultMessage:"Destination does not exist. Too little XRP sent to create it." */
-
 
 /* (async () => {
     let classObj = new xrpHelper();
