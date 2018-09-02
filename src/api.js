@@ -3,6 +3,7 @@ var config = require('../config');
 var logger = require('../utils/logger');
 var btcHelper = require('../utils/btcHelper');
 var ethHelper = require('../utils/ethHelper');
+var xrpHelper = require('../utils/xrpHelper');
 var offlineTool = require('../utils/offlineOperations')
 /**
  * 
