@@ -15,7 +15,7 @@ class xrpHelper {
             await this.api.connect();
             return this.api.isConnected();
         } catch (error) {
-            console.error(error.message)
+            return Promise.reject({ status: false, reason: error.message || error });
         }
     };
 
@@ -23,24 +23,30 @@ class xrpHelper {
         try {
             return this.api.generateAddress();
         } catch (error) {
-            console.error(error);
+            return Promise.reject({ status: false, reason: error.message || error });
         }
     };
-
+    isConnected() {
+        if (this.api.isConnected()) {
+            return;
+        } else throw Error('Not connected to node');
+    }
     async getBalance(address, currency) {
         try {
+            this.isConnected();
             let balance = await this.api.getBalances(address, { currency: currency.toUpperCase() });
             return balance;
         } catch (error) {
-            console.error(error);
+            return Promise.reject({ status: false, reason: error.message || error });
         }
     };
     async getTransaction(txHash) {
         try {
+            this.isConnected();
             let tx = await this.api.getTransaction(txHash);
             return tx;
         } catch (error) {
-            console.error(error);
+            return Promise.reject({ status: false, reason: error.message || error });
         }
     };
 
@@ -65,12 +71,13 @@ class xrpHelper {
                     }
                 }
             };
+            this.isConnected();
             return await this.api.preparePayment(srcAddress, payment, {
                 maxLedgerVersionOffset: 3,
                 // maxFee: this.api._maxFeeXRP
             });
         } catch (error) {
-            console.error(error);
+            return Promise.reject({ status: false, reason: error.message || error });
         }
     };
 
@@ -79,7 +86,7 @@ class xrpHelper {
             txJSON = (typeof txJSON == 'string') ? txJSON : JSON.stringify(txJSON);
             return this.api.sign(txJSON, secret);
         } catch (error) {
-            console.error(error);
+            return Promise.reject({ status: false, reason: error.message || error });
         }
     }
     static isJson(str) {
@@ -93,14 +100,15 @@ class xrpHelper {
 
     async broadcast(signedTransaction) {
         try {
+            this.isConnected();
             return await this.api.submit(signedTransaction);
         } catch (error) {
-            console.error(error);
+            return Promise.reject({ status: false, reason: error.message || error });
         }
     }
 };
 
-/* (async () => {
+(async () => {
     let classObj = new xrpHelper();
     console.log(await classObj.connect());
     console.log(await classObj.getBalance('rEumNCFuxDinZJzD5jEgx7JvpPb6ipsqpB', 'XRP'))
@@ -112,9 +120,9 @@ class xrpHelper {
     const j = raw.txJSON;
     const r = classObj.signRawTx(j, 'shDprshePuAjYtjRgMvysqNHT3rs3');
     console.log(r);
-    // console.log(await classObj.broadcast(r.signedTransaction))
+    console.log(await classObj.broadcast(r.signedTransaction))
     console.log(await classObj.getBalance('rEumNCFuxDinZJzD5jEgx7JvpPb6ipsqpB', 'XRP'))
-})(); */
+})();
 module.exports = {
     /* nonce: nonce,
     createTx: createTransaction,
