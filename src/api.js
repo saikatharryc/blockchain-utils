@@ -25,6 +25,16 @@ async function balance(req, res) {
       balanceRes = await ethHelper.balance(req.query.address);
       break;
     }
+    case 'XRP': {
+      try {
+        balanceRes = await xrpHelper.balance(req.query.address);
+      } catch (error) {
+        balanceRes.status = false;
+        balanceRes.error = error.reason;
+        break;
+      }
+      break;
+    }
     default: {
       balanceRes.status = false;
       balanceRes.error = 'coin not supported'
