@@ -107,22 +107,15 @@ class xrpHelper {
         }
     }
 };
-let exporterInstance = new xrpHelper();
-(async () => {
-    try {
-        await exporterInstance.connect();
-    } catch (error) {
-        console.error('Error in connecting the XRP full Node.');
-    }
-})();
-module.exports = {
+module.exports = xrpHelper/* {
+    connect: exporterInstance.connect,
     getNewAccount: exporterInstance.generateAddress,
     createTx: exporterInstance.prepareRawTx,
     signTx: exporterInstance.signRawTx,
     broadcastTx: exporterInstance.broadcast,
     txDetails: exporterInstance.getTransaction,
     balance: exporterInstance.getBalance
-};
+} */;
 
 /* (async () => {
     let classObj = new xrpHelper();

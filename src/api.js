@@ -3,8 +3,10 @@ var config = require('../config');
 var logger = require('../utils/logger');
 var btcHelper = require('../utils/btcHelper');
 var ethHelper = require('../utils/ethHelper');
-var xrpHelper = require('../utils/xrpHelper');
-var offlineTool = require('../utils/offlineOperations')
+var xrp = require('../utils/xrpHelper');
+var offlineTool = require('../utils/offlineOperations');
+let xrpHelper = new xrp();
+xrpHelper.connect();
 /**
  * 
  * @param {address} req 
@@ -27,7 +29,7 @@ async function balance(req, res) {
     }
     case 'XRP': {
       try {
-        balanceRes = await xrpHelper.balance(req.query.address);
+        balanceRes = await xrpHelper.getBalance(req.query.address);
       } catch (error) {
         balanceRes.status = false;
         balanceRes.error = error.reason;
