@@ -6,9 +6,7 @@ var sysUtils = require('util');
 var bitcoin = require('bitcoinjs-lib');
 var ethereumUtils = require('ethereumjs-util');
 // var Insight = require('bitcore-explorers').Insight;
-var bitcore = require('bitcore-lib');
 var config = require('../config');
-var coininfo = require('coininfo');
 // var btcHandler = new Insight(/* 'https://insight.bitpay.com', bitcoin.networks.bitcoin */);
 const CHAIN_TYPE = {
     RECEIVE: { BTC: 0, ETH: 0 },

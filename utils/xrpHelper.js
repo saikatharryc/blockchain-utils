@@ -107,8 +107,8 @@ class xrpHelper {
         }
     }
 };
+let exporterInstance = new xrpHelper();
 (async () => {
-    let exporterInstance = new xrpHelper();
     try {
         await exporterInstance.connect();
     } catch (error) {
