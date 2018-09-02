@@ -107,14 +107,14 @@ class xrpHelper {
         }
     }
 };
-
+let exporterInstance = new xrpHelper();
 module.exports = {
-    /* nonce: nonce,
-    createTx: createTransaction,
-    signTx: signTransaction,
-    broadcastTx: broadcastTransaction,
-    txDetails: getTxDetails,
-    balance: balance */
+    getNewAccount: exporterInstance.generateAddress,
+    createTx: exporterInstance.prepareRawTx,
+    signTx: exporterInstance.signRawTx,
+    broadcastTx: exporterInstance.broadcast,
+    txDetails: exporterInstance.getTransaction,
+    balance: exporterInstance.getBalance
 };
 /* resultCode:"tecNO_DST_INSUF_XRP"
 resultMessage:"Destination does not exist. Too little XRP sent to create it." */
