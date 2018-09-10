@@ -1,6 +1,4 @@
 var Web3 = require('web3');
-var async = require('async');
-var logger = require('./logger');
 var config = require('../config');
 var ethTx = require('ethereumjs-tx');
 
@@ -54,12 +52,12 @@ async function type(address) {
     try {
         web3.eth.getCode(address, function (error, result) {
             if (error) {
-                logger.error('[api/balance] error address type local api:', { err: error, res: result });
+                // logger.error('[api/balance] error address type local api:', { err: error, res: result });
                 return ({ status: false, error: error.message });
 
             }
             let type = (result === '0x') ? 'account' : 'contract';
-            logger.debug('[type]  txn:', { type: type, address: address });
+            // logger.debug('[type]  txn:', { type: type, address: address });
             return ({ status: true, type: type });
         });
 
