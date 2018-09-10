@@ -46,47 +46,45 @@ async function broadcast(rawTxn) {
 
 };
 
-function type(req, res) {
-    if (req.query.address === undefined) {
-        res.send({ status: false, error: 'no address provided' });
-        return;
+async function type(address) {
+    if (address === undefined) {
+        return ({ status: false, error: 'no address provided' });
+
     }
     try {
-        web3.eth.getCode(req.query.address, function (error, result) {
+        web3.eth.getCode(address, function (error, result) {
             if (error) {
                 logger.error('[api/balance] error address type local api:', { err: error, res: result });
-                res.send({ status: false, error: error.message });
-                return;
+                return ({ status: false, error: error.message });
+
             }
             let type = (result === '0x') ? 'account' : 'contract';
-            logger.debug('[appi/broadcast] broadcasted txn:', { type: type, address: req.query.address });
-            res.send({ status: true, type: type });
+            logger.debug('[type]  txn:', { type: type, address: address });
+            return ({ status: true, type: type });
         });
 
     } catch (e) {
-        res.send({ status: false, error: e.message, type: 'contract' });
-        return;
+        return ({ status: false, error: e.message, type: 'contract' });
+
     }
 };
 
-async function erc20AddressBalance(req, res) {
+async function erc20AddressBalance(atAddress, contractAddress) {
 
-    console.log(req.query);
-    if (req.query.contractAddress == undefined || req.query.atAddress == undefined) {
-        res.send({ status: false, error: 'no contract address provided' });
-        return;
+    if (contractAddress == undefined || atAddress == undefined) {
+        return ({ status: false, error: 'no contract address provided' });
+
     }
     var erc20Balance = 0;
     try {
-        erc20Balance = await (new web3.eth.Contract(config.erc20ABI, req.query.contractAddress, { from: req.query.atAddress })).methods.balanceOf(req.query.atAddress).call();
+        erc20Balance = await (new web3.eth.Contract(config.erc20ABI, contractAddress, { from: atAddress })).methods.balanceOf(atAddress).call();
     } catch (err) {
         erc20Balance = 0;
-        res.send({ status: false, error: err.message });
-        return;
+        return ({ status: false, error: err.message });
     }
 
     erc20Balance = new web3.utils.BN(erc20Balance);
-    return res.send({ status: true, balance: erc20Balance.gt(0) ? erc20Balance.toString() : 0 });
+    return ({ status: true, balance: erc20Balance.gt(0) ? erc20Balance.toString() : 0 });
 };
 
 async function createTransaction(tx) {
@@ -160,5 +158,6 @@ module.exports = {
     signTx: signTransaction,
     broadcastTx: broadcastTransaction,
     txDetails: getTxDetails,
-    balance: balance
+    balance: balance,
+    erc20AddressBalance: erc20AddressBalance
 };
