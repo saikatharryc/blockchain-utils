@@ -95,13 +95,15 @@ async function createTransaction(tx) {
             return ({ status: false, error: 'available Balance is less than to transact' });
         }
         if (isNaN(parseInt(nonceValue))) { return ({ status: false, error: 'nonce is NAN' }); }
+        let contract = new web3.eth.Contract(config.erc20ABI, tx.contractAddress, { from: tx.fromAddress });
         const txParams = {
             nonce: nonceValue,
             gasPrice: web3.utils.toBN(web3.utils.fromWei(await web3.eth.getGasPrice(), 'wei')).mul(web3.utils.toBN(4)),
             gasLimit: config.gasLimit,
-            to: tx.address,
-            value: web3.utils.toBN(tx.amount),
-            chainId: (config.net === 'MAINNET') ? 1 : 3
+            to: tx.contractAddress,
+            value: web3.utils.toHex(0),
+            chainId: (config.net === 'MAINNET') ? 1 : 3,
+            data: contract.methods.transfer(tx.address, tx.amount).encodeABI()
         }
         console.log('txParams', txParams);
         var unsignedTx = new ethTx(txParams).serialize().toString('hex');
