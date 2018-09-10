@@ -89,10 +89,14 @@ async function erc20AddressBalance(atAddress, contractAddress) {
 
 async function createTransaction(tx) {
     try {
-        var res = await Promise.all([await nonce(tx.fromAddress), await balance(tx.fromAddress)]);
-        let nonceValue = res[0], addressBalance = web3.utils.toBN(res[1].balance);
-        if (addressBalance.lte(web3.utils.toBN(tx.amount))) {
-            return ({ status: false, error: 'available Balance is less than to transact' });
+        var res = await Promise.all([nonce(tx.fromAddress), balance(tx.fromAddress), erc20AddressBalance(tx.fromAddress, tx.contractAddress)]);
+        let nonceValue = res[0], addressBalance = web3.utils.toBN(res[1].balance), addressErc20Balance = web3.utils.toBN(res[2].balance);
+
+        if (addressBalance.lte(web3.utils.toBN(0))) {
+            return ({ status: false, error: 'available Ethereum Balance is too low.' });
+        }
+        if (addressErc20Balance.lte(web3.utils.toBN(tx.amount))) {
+            return ({ status: false, error: 'available ERC20 Balance is less than to transact' });
         }
         if (isNaN(parseInt(nonceValue))) { return ({ status: false, error: 'nonce is NAN' }); }
         let contract = new web3.eth.Contract(config.erc20ABI, tx.contractAddress, { from: tx.fromAddress });
@@ -163,3 +167,24 @@ module.exports = {
     balance: balance,
     erc20AddressBalance: erc20AddressBalance
 };
+(async () => {
+
+    //Getting erc20 balance for an address
+    /* console.log(await erc20AddressBalance('0xc3fb96e2ec87574ce002ecf24268d01f13ccb6f0', '0xe7315c152a021db45a3858ea04cb804b4f79d1ac')); */
+
+    //Getting transaction details from blockchain
+    /* console.log(await getTxDetails('0x8a0e32e50338bb2816de8255e241783ce37101b107e9a9ace547805bbd2c08af')); */
+
+    //Getting nonce for an address
+    /* console.log(await nonce('0xc3fb96e2ec87574ce002ecf24268d01f13ccb6f0')); */
+
+    //creating Raw transaction 
+    console.log(await createTransaction({
+        fromAddress: '0x63b93223562b22e9a3b5db825be31797f2b650eb',
+        amount: '100000000000000000000',
+        contractAddress: '0xe7315c152a021db45a3858ea04cb804b4f79d1ac',
+    }));
+
+
+
+})();
