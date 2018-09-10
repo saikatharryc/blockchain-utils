@@ -42,7 +42,7 @@ async function broadcast(rawTxn) {
     } catch (error) {
         return Promise.reject(error.message || error);
     }
-    return send;
+    return networkRes;
 
 };
 
@@ -91,18 +91,20 @@ async function createTransaction(tx) {
     try {
         var res = await Promise.all([nonce(tx.fromAddress), balance(tx.fromAddress), erc20AddressBalance(tx.fromAddress, tx.contractAddress)]);
         let nonceValue = res[0], addressBalance = web3.utils.toBN(res[1].balance), addressErc20Balance = web3.utils.toBN(res[2].balance);
+        const gasPrice = web3.utils.toBN(web3.utils.fromWei(await web3.eth.getGasPrice(), 'wei')).mul(web3.utils.toBN(4));
 
-        if (addressBalance.lte(web3.utils.toBN(0))) {
+        if (addressBalance.lte(gasPrice)) {
             return ({ status: false, error: 'available Ethereum Balance is too low.' });
         }
         if (addressErc20Balance.lte(web3.utils.toBN(tx.amount))) {
             return ({ status: false, error: 'available ERC20 Balance is less than to transact' });
         }
         if (isNaN(parseInt(nonceValue))) { return ({ status: false, error: 'nonce is NAN' }); }
+        if (web3.utils.toHex(tx.address) == web3.utils.toHex(0)) { return ({ status: false, error: 'not allowed address' }); }
         let contract = new web3.eth.Contract(config.erc20ABI, tx.contractAddress, { from: tx.fromAddress });
         const txParams = {
             nonce: nonceValue,
-            gasPrice: web3.utils.toBN(web3.utils.fromWei(await web3.eth.getGasPrice(), 'wei')).mul(web3.utils.toBN(4)),
+            gasPrice: gasPrice,
             gasLimit: config.gasLimit,
             to: tx.contractAddress,
             value: web3.utils.toHex(0),
@@ -170,21 +172,26 @@ module.exports = {
 (async () => {
 
     //Getting erc20 balance for an address
-    /* console.log(await erc20AddressBalance('0xc3fb96e2ec87574ce002ecf24268d01f13ccb6f0', '0xe7315c152a021db45a3858ea04cb804b4f79d1ac')); */
+    /* console.log(await erc20AddressBalance('0x63b93223562b22e9a3b5db825be31797f2b650eb', '0xe7315c152a021db45a3858ea04cb804b4f79d1ac')); */
 
     //Getting transaction details from blockchain
     /* console.log(await getTxDetails('0x8a0e32e50338bb2816de8255e241783ce37101b107e9a9ace547805bbd2c08af')); */
 
     //Getting nonce for an address
-    /* console.log(await nonce('0xc3fb96e2ec87574ce002ecf24268d01f13ccb6f0')); */
+    /* console.log(await nonce('0x63b93223562b22e9a3b5db825be31797f2b650eb')); */
 
     //creating Raw transaction 
-    console.log(await createTransaction({
+    /* console.log(await createTransaction({
         fromAddress: '0x63b93223562b22e9a3b5db825be31797f2b650eb',
-        amount: '100000000000000000000',
+        amount: '100000000',
         contractAddress: '0xe7315c152a021db45a3858ea04cb804b4f79d1ac',
-    }));
+        address: '0xc3fb96e2ec87574ce002ecf24268d01f13ccb6f0'
+    })); */
 
+    //signing the rawTransaction
+    /* console.log(await signTransaction('f8694c84ee6b28008303383894e7315c152a021db45a3858ea04cb804b4f79d1ac80b844a9059cbb000000000000000000000000c3fb96e2ec87574ce002ecf24268d01f13ccb6f000000000000000000000000000000000000000000000000000000000000000011c8080', '0CFE75ED83CB69405B65CB42B22EB3887AFAB4236356D5E85315EA3E3E2516EC')); */
 
+    // broadcasting the transaction to the network
+    /* console.log(await broadcastTransaction('f8a94c84ee6b28008303383894e7315c152a021db45a3858ea04cb804b4f79d1ac80b844a9059cbb000000000000000000000000c3fb96e2ec87574ce002ecf24268d01f13ccb6f000000000000000000000000000000000000000000000000000000000000000011ca02089d24862ccf3a76bce0225e8d1c15048aa8150c7e144355fa3e3fc46a10320a00c11648a0e7054f93c13cb17788f67ba4c967063e22b2a2ff8660171481fd609')); */
 
 })();
