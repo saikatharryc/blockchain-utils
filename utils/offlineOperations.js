@@ -1,6 +1,5 @@
 
 var bip39 = require('bip39')
-var web3 = require('ethers');
 var hdkey = require('hdkey');
 var sysUtils = require('util');
 var bitcoin = require('bitcoinjs-lib');

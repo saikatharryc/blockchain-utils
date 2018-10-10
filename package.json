@@ -4,7 +4,7 @@
   "description": "Open api based blockchain tools, available to work as functions as well as api based",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 0"
   },
   "author": "alt_dex",
   "license": "MIT",
@@ -13,12 +13,10 @@
     "bip39": "^2.5.0",
     "bip44-constants": "^5.0.0",
     "bitcoinjs-lib": "^3.3.2",
-    "bitcore-explorers": "^1.0.1",
     "body-parser": "^1.18.2",
     "coininfo": "^4.0.0",
     "ethereumjs-tx": "^1.3.4",
     "ethereumjs-util": "^5.1.5",
-    "ethers": "^3.0.15",
     "express": "^4.16.2",
     "hdkey": "^0.8.0",
     "ripple-lib": "^1.0.0-beta.5",
