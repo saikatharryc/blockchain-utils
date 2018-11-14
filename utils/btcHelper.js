@@ -47,14 +47,17 @@ async function getUtxos(addresses = []) {
     return resultArray;
 }
 
-async function createTransaction(addresses = [], toAddress, sendAmount, fees = DEFAULT_FEES, sequenceId = 0) {
+async function createTransaction(addresses = [], toAddress, sendAmount, fees = 10000, sequenceId = 0) {
     if (addresses.length < 1 || toAddress == null || sendAmount == null) { return ({ status: false, error: 'transaction params not provided' }); }
     try {
         sendAmount = isNaN(parseInt(sendAmount)) ? 0 : parseInt(sendAmount);
         bitcoin.address.fromBase58Check(toAddress);
-        var utxos = await getUtxos(addresses);
-        var txBuilder = new bitcoin.TransactionBuilder(CURRENT_NETWORK);
-        var sum = 0, isDone = false, vinOrder = [];
+        let utxos = await getUtxos(addresses);
+        let txBuilder = new bitcoin.TransactionBuilder(CURRENT_NETWORK);
+        let sum = 0, isDone = false, vinOrder = [];
+        // utxos.forEach((utxo) => { sum += utxo.amountInSatoshi || 0 });
+        txBuilder.setVersion(1)
+
         utxos.map((utxo, i) => {
             sum += utxo.amountInSatoshi;
             if (!isDone) {
@@ -71,14 +74,24 @@ async function createTransaction(addresses = [], toAddress, sendAmount, fees = D
                 }
             }
         });
+        if (!isDone)
+            return ({ status: false, error: 'Not enough balance, Please provide more UTXOs' });
         txBuilder.addOutput(toAddress, sendAmount);
-    } catch (error) { return ({ status: false, error: error.message || error }); }
-    if (!isDone) return ({ status: false, error: 'Not enough balance, Please provide more UTXOs' });
-    return ({
-        status: true,
-        unsignedHex: txBuilder.buildIncomplete().toHex(),
-        vinOrder: vinOrder
-    });
+        console.log({
+            status: true,
+            unsignedHex: txBuilder.buildIncomplete().toHex(),
+            vinOrder: vinOrder
+        });
+
+        return ({
+            status: true,
+            unsignedHex: txBuilder.buildIncomplete().toHex(),
+            vinOrder: vinOrder
+        });
+    } catch (error) {
+        return ({ status: false, error: error.message || error });
+    }
+
 };
 
 async function signTransaction(tx, privateKeys = {}) {
@@ -112,7 +125,7 @@ async function getTxDetails(txHash) {
     btcHandler.requestGet = sysUtils.promisify(btcHandler.requestGet);
     try {
         var details = await btcHandler.requestGet('/api/tx/' + txHash);
-	if (details.statusCode != 200) throw new Error(details.body);
+        if (details.statusCode != 200) throw new Error(details.body);
     } catch (e) {
         console.error('[getTxDetails]', e);
         return ({ status: false, error: e.message || e });
