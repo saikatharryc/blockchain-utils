@@ -21,7 +21,8 @@
     "hdkey": "^0.8.0",
     "ripple-lib": "^1.0.0-beta.5",
     "sha3": "^1.2.2",
-    "web3": "^1.0.0-beta.34",
+    "web3": "^1.0.0-beta.36",
+    "web3-core": "^1.0.0-beta.36",
     "winston": "^2.4.0"
   },
   "repository": {
