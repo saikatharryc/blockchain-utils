@@ -19,8 +19,13 @@ module.exports = {
   },
   network: {
     BTC: {
+      current: 'test',
       test: 'testnet',
-      live: 'bitcoin'
+      live: 'bitcoin',
+      insightProvider: {
+        test: 'https://test-insight.bitpay.com',
+        live: 'https://insight.bitpay.com'
+      }
     }
   },
   erc20ABI: [

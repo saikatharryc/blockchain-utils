@@ -1,10 +1,19 @@
-var sysUtils = require('util');
-var config = require('../config');
-var bitcoin = require('bitcoinjs-lib');
-var Insight = require('bitcore-explorers').Insight;
-var btcHandler = new Insight(config.insightProvider[config.current]);
-const CURRENT_NETWORK = bitcoin.networks[config.network.BTC[config.current]];
-const DEFAULT_FEES = 50000;
+let sysUtils = require('util');
+let config = require('../config');
+let zcash = require('bitgo-utxo-lib');
+let Insight = require('bitcore-explorers').Insight;
+let currentChain = config.network.ZEC.current || 'test';
+let zecConfig = config.network.ZEC
+const CURRENT_NETWORK = zcash.networks[zecConfig[zecConfig.current]];
+let zecHandler = new Insight(zecConfig.insightProvider[currentChain], CURRENT_NETWORK);
+
+Object.defineProperty(Array.prototype, 'flat', {
+    value: function (depth = 1) {
+        return this.reduce(function (flat, toFlatten) {
+            return flat.concat((Array.isArray(toFlatten) && (depth - 1)) ? toFlatten.flat(depth - 1) : toFlatten);
+        }, []);
+    }
+});
 
 Number.prototype.toSatoshi = function () {
     if (isNaN(this))
@@ -27,13 +36,23 @@ Number.prototype.toSatoshi = function () {
         return parseInt(sign + str.replace(".", "").replace(/^0+/, ""), 10);
     }
 };
+/**
+ * 
+ * @param {*} addresses 
+ */
+// getUtxos(['t27RQiQajxJWqAyowqguKaxrMhof4m9hCJ8'])
+// createTransaction(['t2P5qnbTJL6dZvXUTRRdbtR4qHipPbB7zhk'], 't2P5qnbTJL6dZvXUTRRdbtR4qHipPbB7zhk', 1000000)
 async function getUtxos(addresses = []) {
-    btcHandler.getUnspentUtxos = sysUtils.promisify(btcHandler.getUnspentUtxos);
-    let utxoArray = await btcHandler.getUnspentUtxos(addresses);
+    zecHandler.requestPost = sysUtils.promisify(zecHandler.requestPost);
+    let utxoArray = await zecHandler.requestPost('/api/addrs/utxo', {
+        addrs: addresses.map((address) => {
+            return address.toString();
+        }).join(',')
+    });
+
     if (utxoArray.length < 1) throw new Error(' [getUtxos] Found ' + utxoArray.length + ' utxos');
-    let resultArray = utxoArray.map((utxo, i) => {
-        utxo = utxo.toObject();
-        try { bitcoin.address.fromBase58Check(utxo.address); } catch (e) { throw new Error(e); }
+    let resultArray = utxoArray.body.map((utxo, i) => {
+        try { zcash.address.fromBase58Check(utxo.address); } catch (e) { throw new Error(e); }
         //change below when rpc
         return ({
             address: utxo.address,
@@ -43,22 +62,23 @@ async function getUtxos(addresses = []) {
             script: Buffer.from(utxo.scriptPubKey)
         });
     });
-
+    // console.log(utxoArray.body)
     return resultArray;
 }
-
 async function createTransaction(addresses = [], toAddress, sendAmount, fees = 10000, sequenceId = 0) {
     if (addresses.length < 1 || toAddress == null || sendAmount == null) { return ({ status: false, error: 'transaction params not provided' }); }
     try {
         sendAmount = isNaN(parseInt(sendAmount)) ? 0 : parseInt(sendAmount);
-        bitcoin.address.fromBase58Check(toAddress);
+        zcash.address.fromBase58Check(toAddress);
         let utxos = await getUtxos(addresses);
-        let txBuilder = new bitcoin.TransactionBuilder(CURRENT_NETWORK);
+        let txBuilder = new zcash.TransactionBuilder(CURRENT_NETWORK);
         let sum = 0, isDone = false, vinOrder = [];
         // utxos.forEach((utxo) => { sum += utxo.amountInSatoshi || 0 });
-        txBuilder.setVersion(1)
+        txBuilder.setVersion(zcash.Transaction.ZCASH_SAPLING_VERSION);
+        txBuilder.setVersionGroupId(parseInt('0x892F2085', 16));
 
         utxos.map((utxo, i) => {
+            // console.log(utxo)
             sum += utxo.amountInSatoshi;
             if (!isDone) {
                 if (sum >= (sendAmount + fees)) {
@@ -77,12 +97,6 @@ async function createTransaction(addresses = [], toAddress, sendAmount, fees = 1
         if (!isDone)
             return ({ status: false, error: 'Not enough balance, Please provide more UTXOs' });
         txBuilder.addOutput(toAddress, sendAmount);
-        console.log({
-            status: true,
-            unsignedHex: txBuilder.buildIncomplete().toHex(),
-            vinOrder: vinOrder
-        });
-
         return ({
             status: true,
             unsignedHex: txBuilder.buildIncomplete().toHex(),
@@ -93,31 +107,27 @@ async function createTransaction(addresses = [], toAddress, sendAmount, fees = 1
     }
 
 };
-
-async function signTransaction(tx, privateKeys = {}) {
-    if (privateKeys == null || tx == null || tx.vinOrder == null) { return ({ status: false, error: '[signTransaction] Txn params not provided' }); }
-    try {
-        let txObject = bitcoin.Transaction.fromHex(tx.unsignedHex);
-        var unsignedTx = bitcoin.TransactionBuilder.fromTransaction(txObject, CURRENT_NETWORK);
-        unsignedTx.tx.ins.forEach((vin, i) => {
-            unsignedTx.sign(i, bitcoin.ECPair.fromWIF(privateKeys[tx.vinOrder[i]], CURRENT_NETWORK));
-        });
-    } catch (error) { console.error(error); return ({ status: false, error: error.message || error }); }
-    console.log('signedTx', unsignedTx.build().toHex());
-    return {
-        status: true,
-        signedHex: unsignedTx.build().toHex()
-    };
-}
-async function signTransactionMultiSig(tx, privateKeys = [], redeemScriptHex) {
+async function signTransaction(tx, privateKeys = [], redeemScriptHex) {
     if (privateKeys == null || tx == null) { return ({ status: false, error: '[signTransaction] Txn params not provided' }); }
     try {
-        let txObject = bitcoin.Transaction.fromHex(tx.unsignedHex);
+        let utxoSet = await getUtxos(config.HOTWALLET.ZEC.from);
+        const hashType = zcash.Transaction.SIGHASH_ALL;
+        let txObject = zcash.Transaction.fromHex(tx.unsignedHex, CURRENT_NETWORK);
         let redeemScript = Buffer.from(redeemScriptHex, 'hex');
-        var unsignedTx = bitcoin.TransactionBuilder.fromTransaction(txObject, CURRENT_NETWORK);
-        unsignedTx.__tx.ins.forEach((vin, i) => {
-            unsignedTx.sign(i, bitcoin.ECPair.fromWIF(privateKeys[0], CURRENT_NETWORK), redeemScript);
-            unsignedTx.sign(i, bitcoin.ECPair.fromWIF(privateKeys[1], CURRENT_NETWORK), redeemScript);
+        var unsignedTx = zcash.TransactionBuilder.fromTransaction(txObject, CURRENT_NETWORK);
+        unsignedTx.tx.ins.forEach((vin, i) => {
+            let inputValueToSign = 0;
+            for (let key in unsignedTx.prevTxMap) {
+                let txid = key.split(':')[0];
+                txid = Buffer.from(txid, 'hex').reverse().toString('hex');
+                let prevTxId = Buffer.from(vin.hash).reverse().toString('hex');
+                utxoSet.forEach(utxo => {
+                    if ((utxo.txid == prevTxId) && (utxo.txid == txid) && utxo.voutIndex == vin.index)
+                        inputValueToSign = utxo.amountInSatoshi;
+                });
+            }
+            unsignedTx.sign(i, zcash.ECPair.fromWIF(privateKeys[0], CURRENT_NETWORK), redeemScript, hashType, inputValueToSign);
+            unsignedTx.sign(i, zcash.ECPair.fromWIF(privateKeys[1], CURRENT_NETWORK), redeemScript, hashType, inputValueToSign);
         });
     } catch (error) {
         console.error(error); return ({ status: false, error: error.message || error });
@@ -128,42 +138,45 @@ async function signTransactionMultiSig(tx, privateKeys = [], redeemScriptHex) {
         signedHex: unsignedTx.build().toHex()
     };
 }
-
-
 async function broadcastTransaction(serializedTx) {
-    btcHandler.broadcast = sysUtils.promisify(btcHandler.broadcast);
+    zecHandler.broadcast = sysUtils.promisify(zecHandler.broadcast);
     try {
-        var broadcastedTxn = await btcHandler.broadcast(serializedTx);
+        var broadcastedTxn = await zecHandler.broadcast(serializedTx);
+        console.log('[broadcastedTxn]', broadcastedTxn)
+        return ({ status: true, transactionHash: broadcastedTxn });
     } catch (error) {
+        console.log(error)
         return ({ status: false, error: error.message || error });
     }
-    return ({ status: true, message: broadcastedTxn });
 }
-
 async function getTxDetails(txHash) {
     if (txHash == null) { return ({ status: false, error: 'TxHash is null or empty' }); }
-    btcHandler.requestGet = sysUtils.promisify(btcHandler.requestGet);
+    zecHandler.requestGet = sysUtils.promisify(zecHandler.requestGet);
     try {
-        var details = await btcHandler.requestGet('/api/tx/' + txHash);
+        var details = await zecHandler.requestGet('/api/tx/' + txHash);
         if (details.statusCode != 200) throw new Error(details.body);
     } catch (e) {
         console.error('[getTxDetails]', e);
         return ({ status: false, error: e.message || e });
     }
-    // console.log(details);
+    // console.log(details.body);
     if (details == null || details.body == null || details.body == 'Not found')
         return ({ status: false, error: 'Not found' });
-    console.log('[btcHelper-getTxDetails]', details.body);
+    console.log('[zecHelper-getTxDetails]', JSON.parse(details.body));
     return ({ status: true, message: (details.body) });
 }
-
 async function balance(address) {
     if (address == undefined) { return ({ status: false, error: 'no address provided' }); }
-    btcHandler.address = sysUtils.promisify(btcHandler.address);
-    let bal = await btcHandler.address(address).catch(e => { return ({ status: false, error: e.message || e }); });
-    return (bal.status == null) ? { status: true, balance: bal.balance.toString() } : bal;
+    zecHandler.requestGet = sysUtils.promisify(zecHandler.requestGet);
+    try {
+        let bal = await zecHandler.requestGet('/api/addr/' + address)
+            .catch(e => { return ({ status: false, error: e.message || e }); });
+        return (bal.body == null) ? { status: true, balance: bal.body } : bal;
+    } catch (error) {
+        console.log({ method: 'balance', error: error.message || error })
+        return ({ status: false, error: error.message || error });
+    }
 };
-
 
 module.exports = {
     getUTXO: getUtxos,
@@ -171,6 +184,5 @@ module.exports = {
     signTx: signTransaction,
     broadcastTx: broadcastTransaction,
     txDetails: getTxDetails,
-    balance: balance,
-    signTransactionMultiSig
-};
+    balance: balance
+}

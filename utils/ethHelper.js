@@ -70,8 +70,6 @@ function type(req, res) {
 };
 
 async function erc20AddressBalance(req, res) {
-
-    console.log(req.query);
     if (req.query.contractAddress == undefined || req.query.atAddress == undefined) {
         res.send({ status: false, error: 'no contract address provided' });
         return;
