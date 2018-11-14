@@ -109,6 +109,26 @@ async function signTransaction(tx, privateKeys = {}) {
         signedHex: unsignedTx.build().toHex()
     };
 }
+async function signTransactionMultiSig(tx, privateKeys = [], redeemScriptHex) {
+    if (privateKeys == null || tx == null) { return ({ status: false, error: '[signTransaction] Txn params not provided' }); }
+    try {
+        let txObject = bitcoin.Transaction.fromHex(tx.unsignedHex);
+        let redeemScript = Buffer.from(redeemScriptHex, 'hex');
+        var unsignedTx = bitcoin.TransactionBuilder.fromTransaction(txObject, CURRENT_NETWORK);
+        unsignedTx.__tx.ins.forEach((vin, i) => {
+            unsignedTx.sign(i, bitcoin.ECPair.fromWIF(privateKeys[0], CURRENT_NETWORK), redeemScript);
+            unsignedTx.sign(i, bitcoin.ECPair.fromWIF(privateKeys[1], CURRENT_NETWORK), redeemScript);
+        });
+    } catch (error) {
+        console.error(error); return ({ status: false, error: error.message || error });
+    }
+    console.log('signedTx', unsignedTx.build().toHex());
+    return {
+        status: true,
+        signedHex: unsignedTx.build().toHex()
+    };
+}
+
 
 async function broadcastTransaction(serializedTx) {
     btcHandler.broadcast = sysUtils.promisify(btcHandler.broadcast);
@@ -151,5 +171,6 @@ module.exports = {
     signTx: signTransaction,
     broadcastTx: broadcastTransaction,
     txDetails: getTxDetails,
-    balance: balance
+    balance: balance,
+    signTransactionMultiSig
 };
