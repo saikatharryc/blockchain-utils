@@ -1,33 +1,31 @@
 
 var bip39 = require('bip39')
 var hdkey = require('hdkey');
-var sysUtils = require('util');
 var bitcoin = require('bitcoinjs-lib');
 var ethereumUtils = require('ethereumjs-util');
-// var Insight = require('bitcore-explorers').Insight;
 var config = require('../config');
-// var btcHandler = new Insight(/* 'https://insight.bitpay.com', bitcoin.networks.bitcoin */);
 const CHAIN_TYPE = {
     RECEIVE: { BTC: 0, ETH: 0 },
     CHANGE: { BTC: 0, ETH: 1 }
 };
-/* const CURRENT_NETWORK = bitcoin.networks[config.network.BTC[config.current]];
-const CURRENT_NETWORK_VERSION = bitcoin.networks[config.network.BTC[config.current]].bip32;//coininfo.bitcoin[config.current].versions.bip32; */
-
-//let k = bitcoin.ECPair.makeRandom({ compressed: false, network: bitcoin.networks.testnet });
-//console.log(k.getAddress(), k.toWIF());
 var MAX_GENERATOR_LIMIT = 100;
 var SUPPORTED_COINS = ['BTC', 'ETH'];
 var getCurrentNetwork = (coinType) => {
     let CURRENT_NETWORK = '', CURRENT_NETWORK_VERSION = '';
     switch (coinType.toUpperCase()) {
         case 'BTC':
-            CURRENT_NETWORK = bitcoin.networks[config.network.BTC[config.current]];
-            CURRENT_NETWORK_VERSION = bitcoin.networks[config.network.BTC[config.current]].bip32;;
+            let btcConfig = config.network.BTC
+            CURRENT_NETWORK = bitcoin.networks[btcConfig[btcConfig.current]];
+            CURRENT_NETWORK_VERSION = bitcoin.networks[btcConfig[btcConfig.current]].bip32;
             break;
         case 'ETH':
             CURRENT_NETWORK = '';
             CURRENT_NETWORK_VERSION = '';
+            break;
+        case 'ZEC':
+            let zcash = config.network.ZEC;
+            CURRENT_NETWORK = zecUtils.networks[zcash[zcash.current]];
+            CURRENT_NETWORK_VERSION = zecUtils.networks[zcash[zcash.current]].bip32;
             break;
         default:
             CURRENT_NETWORK = '';
@@ -47,8 +45,13 @@ var addressDerivation = {
         return ethereumUtils.toChecksumAddress(nonCheckSumAddress);
     },
     BTC: function (xpub, index) {
-        return bitcoin.HDNode.fromBase58(xpub, getCurrentNetwork('BTC').CURRENT_NETWORK).derive(index).keyPair.getAddress();
+        let pubKey = bitcoin.bip32.fromBase58(xpub, getCurrentNetwork('BTC').CURRENT_NETWORK).derive(index).publicKey;
+        return bitcoin.payments.p2pkh({ pubkey: pubKey, network: getCurrentNetwork('BTC').CURRENT_NETWORK }).address;
     },
+    ZEC: function (xpub, index) {
+        let pubKey = zecUtils.HDNode.fromBase58(xpub, getCurrentNetwork('ZEC').CURRENT_NETWORK).derive(index).keyPair;
+        return pubKey.getAddress();
+    }
 };
 
 async function importAccFromMnemonic(mnemonic, coinType) {
@@ -118,46 +121,25 @@ function mnemonicGenerate() {
     return bip39.validateMnemonic(generatedMnemonic) ? generatedMnemonic.toString() : '';
 }
 
-async function generateAddressesFromXpub(neuteredXpub, coinType, total = 10) {
-    console.log('generateAddressesFromXpub', neuteredXpub, coinType, total);
-    if (neuteredXpub == null || parseInt(total) < 0 || parseInt(total) > MAX_GENERATOR_LIMIT || coinType == null || !SUPPORTED_COINS.includes(coinType.toUpperCase())) throw new Error('XPUB length ');
-    if (!bitcoin.HDNode.fromBase58(neuteredXpub, getCurrentNetwork(coinType).CURRENT_NETWORK).isNeutered()) { throw new Error('Please provide neutered Xpub ') }
+function generateAddressesFromXpub(neuteredXpub, coinType, index) {
+    console.log('generateAddressesFromXpub(', coinType, index);
+    if (neuteredXpub == null || parseInt(index) < 0 || coinType == null || !SUPPORTED_COINS.includes(coinType.toUpperCase()))
+        throw new Error('XPUB length');
+
     if (hdkey.fromExtendedKey(neuteredXpub, getCurrentNetwork(coinType).CURRENT_NETWORK_VERSION).depth !== 4) {
         throw new Error('Please provide neutered Xpub at depth 4')
     };
-    let genrtdAddress = [];
-    for (let i = 0; i < total; i++) {
-        genrtdAddress.push({
-            path: 'm/' + i,
-            index: i,
-            publicAddress: addressDerivation[coinType].call(null, neuteredXpub, i),
-            privateKey: ''
-        });
+    let genrtdAddress = {
+        path: 'm/' + index,
+        index: index,
+        publicAddress: addressDerivation[coinType.toUpperCase()].call(null, neuteredXpub, index),
+        privateKey: ''
     }
+    console.log('[genrtdAddress]', genrtdAddress);
     return genrtdAddress || null;
-}
-
-/* async function balanceAtAddress(address, coinType) {
-    if (SUPPORTED_COINS.includes(coinType.toUpperCase()))
-        switch (coinType.toUpperCase()) {
-            case 'BTC': {
-                bitcoin.address.fromBase58Check(address);
-                btcHandler.address = sysUtils.promisify(btcHandler.address)
-                console.log(await btcHandler.address(address));
-                break;
-            }
-            case 'ETH': {
-                ethereumUtils.isValidChecksumAddress(address);
-                console.log(await web3Handler.eth.getBalance(ethereumUtils.toChecksumAddress(address)));
-                break;
-            }
-            default: console.log('hi'); break;
-        }
-
-} */
+};
 async function generateKeyPairFromXpriv(xpriv, coinType, total = 10) {
     if (!SUPPORTED_COINS.includes(coinType.toUpperCase())) { throw new Error('Coin not supported'); }
-    if (bitcoin.HDNode.fromBase58(xpriv, getCurrentNetwork(coinType).CURRENT_NETWORK).isNeutered()) { throw new Error('Please provide Master Private key in xpriv format') }
     if (hdkey.fromExtendedKey(xpriv, getCurrentNetwork(coinType).CURRENT_NETWORK_VERSION).depth !== 3) { throw new Error('Please provide Master Private key at Account depth or at 3') };
     let hdNode = bitcoin.HDNode.fromBase58(xpriv, getCurrentNetwork(coinType).CURRENT_NETWORK);
     let chainType = CHAIN_TYPE.RECEIVE[coinType.toUpperCase()];
