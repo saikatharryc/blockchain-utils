@@ -23,7 +23,8 @@
     "sha3": "^1.2.2",
     "web3": "^1.0.0-beta.36",
     "web3-core": "^1.0.0-beta.36",
-    "winston": "^2.4.0"
+    "winston": "^2.4.0",
+    "bitgo-utxo-lib": "1.2.1"
   },
   "repository": {
     "type": "git",
